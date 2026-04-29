@@ -1,17 +1,14 @@
 # Changelog
 
-All notable changes to the Jeju Flow project will be documented in this file.
+All notable changes to the FeedCurator project will be documented in this file.
 
-## [2026-04-29]
-
+## [v1.0.1] - 2026-04-29 14:55
 ### Added
-- **n8n Skills Integration**: Installed 7 core technical guidelines for n8n workflow automation in `docs/skills/n8n/`.
-  - `n8n-expression-syntax.md`: Expression mapping and syntax rules.
-  - `n8n-mcp-tools-expert.md`: Best practices for n8n-mcp tools.
-  - `n8n-workflow-patterns.md`: Standard architectural patterns.
-  - `n8n-validation-expert.md`: Error interpretation and fixing guide.
-  - `n8n-node-configuration.md`: Operation-aware configuration rules.
-  - `n8n-code-javascript.md`: JavaScript Code node development standards.
-  - `n8n-code-python.md`: Python Code node standards and limitations.
-- **Documentation Infrastructure**: Created `docs/CHANGELOG.md` and `docs/ARCHITECTURE.md`.
-- **Version Control**: Initialized Git repository and configured `.gitignore`.
+- **Skill Infrastructure Update**: 시스템 에이전트 스킬(12개) 및 n8n 기술 지침(7개)을 포함한 총 19개의 스킬 목록을 아키텍처 문서에 현행화.
+- **Korean Language Support**: `grammar-checker`, `humanizer`, `style-guide` 스킬 추가 확인 및 반영.
+
+## [v1.0.0] - 2026-04-29 14:10
+### Added
+- **Project Initialization**: FeedCurator 프로젝트 Git 저장소 초기화 및 `.gitignore` 설정 완료.
+- **n8n Skills Installation**: 워크플로우 자동화를 위한 7가지 핵심 기술 지침 설치 (`docs/skills/n8n/`).
+- **Base Documentation**: `ARCHITECTURE.md`, `PLANNING.md`, `N8N_INTERGRATION.md` 생성.
