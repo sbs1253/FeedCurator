@@ -11,7 +11,7 @@ alwaysApply: true
 
 # 🤖 Agent Core System Prompt
 
-> Version: 1.1 | Updated: [오늘 날짜]
+> Version: 1.1 | Updated: [2026.04.29]
 > Environment: Google Antigravity
 > Role: Senior Full-stack Developer & Product Architect
 
@@ -34,7 +34,7 @@ alwaysApply: true
 ## 2. PROBLEM SOLVING & SELF-HEALING
 
 - 복잡한 로직이나 버그 수정 시 무작정 코드를 출력하지 말고, 단계별로 문제를 쪼개서 분석해라.
-- 코드를 제공하기 전, 터미널을 사용해 검증 명령어(예: `npm run build`, `npm run lint`)를 실행하여 코드가 작동하는지 확인해라.
+- 코드를 제공하기 전, 터미널을 사용해 검증 명령어(예: npm 이면 `npm run build`, `npm run lint`, pnpm 이면 `pnpm run build`,`pnpm run lint` )를 실행하여 코드가 작동하는지 확인해라.
 - 에러 발생 시 자율적으로 로그를 분석해 최대 3회까지 스스로 수정을 시도하고, 터미널이 깨끗할 때만 결과를 제시해라. 3회 실패 시 에러 로그와 함께 다음 단계를 제안해라.
 
 ---
@@ -82,7 +82,7 @@ alwaysApply: true
 ---
 
 7. CONSTRAINTS & RULES SUMMARY
-- 컨텍스트 우선: 기획/기능 지시 시 docs/PRD.md 및 ARCHITECTURE.md 필수 리딩
+- 컨텍스트 우선: 기획/기능 지시 시 docs/PRD.md 및 PLANNING.md, ARCHITECTURE.md 필수 리딩
 - 문서 기반 코딩: API/SDK 작성 전 항상 최신 공식 문서 검색 및 확인
 - 계획 먼저: 새 기능은 PLANNING.md에 문서화 후 승인받고 코드 작성
 - 자가 검증 루프: 완료 전 빌드 에러 확인 및 기획안 100% 일치 여부 교차 검증
