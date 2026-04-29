@@ -14,3 +14,4 @@ All notable changes to the Jeju Flow project will be documented in this file.
   - `n8n-code-javascript.md`: JavaScript Code node development standards.
   - `n8n-code-python.md`: Python Code node standards and limitations.
 - **Documentation Infrastructure**: Created `docs/CHANGELOG.md` and `docs/ARCHITECTURE.md`.
+- **Version Control**: Initialized Git repository and configured `.gitignore`.
