@@ -1,9 +1,12 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
-import { Header } from '@/components/Header';
+import { ThemeProvider } from 'next-themes';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { AppSidebar } from '@/components/AppSidebar';
+import { QueryProvider } from '@/components/providers/QueryProvider';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -31,12 +34,32 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">
-        <TooltipProvider>
-          <Header />
-          <main className="flex-1 container mx-auto px-4 md:px-8 py-8">{children}</main>
-          <Toaster />
-        </TooltipProvider>
+      <body className="min-h-full">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <QueryProvider>
+            <TooltipProvider>
+              <SidebarProvider>
+                <AppSidebar />
+                <SidebarInset>
+                  {/* 모바일 햄버거 트리거 */}
+                  <header className="flex h-12 items-center gap-2 border-b px-4 md:hidden">
+                    <SidebarTrigger />
+                    <span className="font-semibold text-sm">💡 FeedCurator</span>
+                  </header>
+                  <main className="flex-1 p-4 md:p-8">
+                    {children}
+                  </main>
+                </SidebarInset>
+              </SidebarProvider>
+              <Toaster />
+            </TooltipProvider>
+          </QueryProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -10,7 +10,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-export function SyncButton() {
+interface SyncButtonProps {
+  variant?: 'default' | 'sidebar';
+}
+
+export function SyncButton({ variant = 'default' }: SyncButtonProps) {
   const [loading, setLoading] = useState(false);
 
   async function handleSync() {
@@ -18,11 +22,11 @@ export function SyncButton() {
     try {
       const res = await fetch("/api/sync", { method: "POST" });
       const data = await res.json();
-      
+
       if (!res.ok || data.error) {
         throw new Error(data.error || "동기화에 실패했습니다.");
       }
-      
+
       toast.success("수동 동기화가 요청되었습니다.", {
         description: "n8n 파이프라인에서 요약을 시작합니다. 잠시 후 새로고침해주세요."
       });
@@ -33,12 +37,26 @@ export function SyncButton() {
     }
   }
 
+  if (variant === 'sidebar') {
+    return (
+      <Button
+        variant="outline"
+        className="w-full justify-start gap-2"
+        onClick={handleSync}
+        disabled={loading}
+      >
+        <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
+        {loading ? "동기화 중..." : "안읽음 동기화"}
+      </Button>
+    );
+  }
+
   return (
     <Tooltip>
       <TooltipTrigger render={
-        <Button 
-          variant="outline" 
-          onClick={handleSync} 
+        <Button
+          variant="outline"
+          onClick={handleSync}
           disabled={loading}
         >
           <RefreshCw className={`size-4 mr-2 ${loading ? "animate-spin" : ""}`} />
