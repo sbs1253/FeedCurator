@@ -1,49 +1,177 @@
-# Project Architecture - Jeju Flow
+# Project Architecture — FeedCurator
+
+> **Last Updated:** 2026-04-30 | **Current Version:** v2.0.0
+
+---
 
 ## Overview
-Jeju Flow is a cultural trend analysis dashboard for Jeju Island, integrating data from various APIs and automating workflows using n8n.
 
-## Core Components
-- **Framework**: Next.js 16 (App Router)
-- **AI Integration**: Google Gemini API via `@google/genai`
-- **Automation**: n8n Workflow Automation
-- **Database**: Supabase
-- **Styling**: Tailwind CSS + shadcn/ui
+FeedCurator는 마케터를 위한 이메일 뉴스레터 AI 요약 대시보드입니다.
+Gmail 구독 뉴스레터를 n8n이 자동 수집·AI 요약하여 Supabase에 저장하고,
+Next.js 프론트엔드가 이를 카드 및 캐러셀 형태로 렌더링합니다.
 
-## Automation Layer (n8n)
-The project uses `n8n` for data collection, processing, and scheduled insights.
-- **Integration**: Managed via `n8n-mcp` for agentic workflow design and validation.
+---
+
+## Tech Stack
+
+| 카테고리 | 기술 |
+|----------|------|
+| Framework | Next.js 16 (App Router, Turbopack) |
+| Language | TypeScript |
+| Styling | Tailwind CSS v4 + shadcn/ui (base 라이브러리) |
+| Animation | Framer Motion |
+| Data Fetching | TanStack Query v5 (클라이언트) + Server Components (초기 렌더링) |
+| Database | Supabase (PostgreSQL) |
+| Auth/Security | service_role 키를 Server 측에서만 사용, RLS 정책 없이 서버에서 직접 쿼리 |
+| Automation | n8n (Gmail 트리거, Cohere LLM 요약, Supabase Upsert) |
+| Deployment | Vercel (예정) |
+
+---
+
+## 데이터 플로우
+
+```
+Gmail (구독 뉴스레터 수신)
+  └─ n8n Gmail Trigger (1분마다 폴링 OR 대시보드 Sync 버튼)
+       └─ subscriptions 테이블 화이트리스트 필터 (DB 검문소)
+            └─ Cohere LLM (요약 JSON 생성)
+                 └─ Supabase articles 테이블 Upsert
+                      └─ Next.js Server Component → ArticleCard 렌더링
+```
+
+---
+
+## 디렉토리 구조
+
+```
+src/
+├── app/
+│   ├── layout.tsx              ← ThemeProvider + QueryProvider + SidebarProvider
+│   ├── page.tsx                ← 메인 피드 (AiBriefingBanner + StatsBar + FeedCarousel 3개)
+│   ├── explore/
+│   │   └── page.tsx            ← 추천 탐색 (카테고리 Tabs + RecommendationCard)
+│   ├── api/
+│   │   └── sync/route.ts       ← n8n Webhook 프록시 (CORS 우회)
+│   └── actions.ts              ← Server Actions (구독 CRUD, 추천 조회)
+├── components/
+│   ├── AppSidebar.tsx          ← 2-Column 사이드바 (nav + 동기화 + 다크모드 + 구독관리)
+│   ├── ThemeToggle.tsx         ← 다크/라이트 전환 버튼
+│   ├── AiBriefingBanner.tsx    ← Hero 섹션 (DB 태그 집계 → 오늘의 키워드)
+│   ├── StatsBar.tsx            ← 4칸 통계 바 (Server Component)
+│   ├── FeedCarousel.tsx        ← 가로 스크롤 캐러셀 (shadcn Carousel + embla)
+│   ├── ArticleCard.tsx         ← 인사이트 카드 (framer-motion + Sheet 연동)
+│   ├── ArticleDetailSheet.tsx  ← 상세보기 우측 Drawer
+│   ├── RecommendationCard.tsx  ← 추천 채널 카드 (framer-motion)
+│   ├── SubscriptionManager.tsx ← 구독 CRUD Sheet (category 드롭다운 포함)
+│   ├── SyncButton.tsx          ← n8n 동기화 버튼 (sidebar/default variant)
+│   └── providers/
+│       └── QueryProvider.tsx   ← TanStack Query v5 + DevTools Provider
+├── lib/
+│   └── supabase.ts             ← anon 클라이언트 + service_role 클라이언트
+├── hooks/
+│   └── use-mobile.ts           ← shadcn 모바일 감지 훅
+└── types/
+    └── index.ts                ← Article, Subscription, Recommendation, SUBSCRIPTION_CATEGORIES
+```
+
+---
+
+## Supabase 스키마
+
+### `articles` 테이블
+| 컬럼 | 타입 | 설명 |
+|------|------|------|
+| id | UUID (PK) | 자동 생성 |
+| source_id | TEXT | 원본 Gmail 메일 ID |
+| source_type | TEXT | `"newsletter"` 또는 `"rss"` |
+| source_name | TEXT | 발신자명 (예: 캐릿) |
+| title | TEXT | AI 정제 제목 |
+| original_url | TEXT | Gmail 원문 링크 |
+| summary | TEXT | 3줄 요약 (`\n` 구분) |
+| insight | TEXT | 마케팅 인사이트 1문장 |
+| tags | TEXT | 해시태그 (공백 구분) |
+| email_date | TIMESTAMPTZ | 실제 이메일 발송 시간 |
+| created_at | TIMESTAMPTZ | DB 저장 시간 |
+
+### `subscriptions` 테이블
+| 컬럼 | 타입 | 설명 |
+|------|------|------|
+| id | UUID (PK) | 자동 생성 |
+| sender_email | TEXT (UNIQUE) | 발신자 이메일 (n8n 필터 기준) |
+| source_name | TEXT | 채널 이름 |
+| category | TEXT | 카테고리 (DEFAULT '기타') — v2.0에서 추가 |
+| created_at | TIMESTAMPTZ | 등록 시간 |
+
+### `recommendations` 테이블 (v2.0 신규)
+| 컬럼 | 타입 | 설명 |
+|------|------|------|
+| id | UUID (PK) | 자동 생성 |
+| name | TEXT | 채널명 |
+| description | TEXT | 한 줄 소개 |
+| category | TEXT | 카테고리 |
+| site_url | TEXT | 외부 링크 |
+| tags | TEXT | 해시태그 |
+| thumbnail_url | TEXT (nullable) | 썸네일 이미지 |
+| created_at | TIMESTAMPTZ | 등록 시간 |
+
+---
+
+## 데이터 패칭 전략 (하이브리드)
+
+| 상황 | 패턴 | 적용 컴포넌트 |
+|------|------|--------------|
+| 초기 페이지 렌더링 | Server Component + Supabase service_role | page.tsx, AiBriefingBanner, StatsBar, explore/page.tsx |
+| 구독 추가/삭제 후 목록 갱신 | Server Action + 클라이언트 상태 업데이트 | SubscriptionManager |
+| 동기화 버튼 → n8n 호출 | useMutation (예정) / 현재 fetch + toast | SyncButton |
+| 태그/채널 클라이언트 필터 (Phase 3.2) | useQuery (예정) | TagFilter (미구현) |
+
+---
+
+## n8n 자동화 구조
+
+### Track 1: 실시간 (Gmail Trigger)
+```
+Gmail Trigger → Extract → DB 검문소 → Track1 Restore → LLM Chain → Code → Upsert + 읽음처리
+```
+
+### Track 2: 수동 동기화 (Webhook)
+```
+Webhook → 구독 명단 조회 → 검색어 조립 → Gmail 안읽음 수집 → Extract → LLM Chain → Code → Upsert + 읽음처리
+```
+
+---
 
 ## Agent Skills
-The AI agent utilizes two types of skills to ensure production-grade development.
 
-### 1. System Agent Skills (12 Skills)
-These skills provide specialized expertise in modern web development and Korean language processing.
-- **find-skills**: Discovery and installation of new agent capabilities.
-- **frontend-design**: Production-grade UI/UX design and implementation.
-- **grammar-checker**: Korean grammar, spelling, and spacing validation.
-- **humanizer**: Converting AI-generated Korean text into natural, human-like writing.
-- **style-guide**: Maintaining consistent tone and terminology across documents.
-- **next-best-practices**: Next.js (App Router) architectural and performance patterns.
-- **next-cache-components**: Next.js 16 Cache Components (PPR, use cache).
-- **shadcn**: Managing and styling shadcn/ui components.
-- **tailwind-design-system**: Scalable design systems with Tailwind CSS v4.
-- **tailwind-v4-shadcn**: Integration patterns for Tailwind v4 and shadcn/ui.
-- **vercel-react-best-practices**: React performance optimization guidelines.
-- **web-design-guidelines**: Web accessibility and UI/UX best practices audits.
+### System Agent Skills (12종)
+- `find-skills`, `frontend-design`, `grammar-checker`, `humanizer`, `style-guide`
+- `next-best-practices`, `next-cache-components`, `shadcn`, `tailwind-design-system`
+- `tailwind-v4-shadcn`, `vercel-react-best-practices`, `web-design-guidelines`
 
-### 2. Domain-Specific n8n Skills (7 Skills)
-Technical guidelines for automation are stored in `docs/skills/n8n/`.
-- `n8n-expression-syntax.md`: Expression mapping and syntax rules.
-- `n8n-mcp-tools-expert.md`: Best practices for n8n-mcp tools.
-- `n8n-workflow-patterns.md`: Standard architectural patterns.
-- `n8n-validation-expert.md`: Error interpretation and fixing guide.
-- `n8n-node-configuration.md`: Operation-aware configuration rules.
-- `n8n-code-javascript.md`: JavaScript Code node development standards.
-- `n8n-code-python.md`: Python Code node standards and limitations.
+### n8n Domain Skills (7종)
+`docs/skills/n8n/` 디렉토리에 저장됨
+
+---
+
+## 향후 개발 계획 (Roadmap)
+
+| Phase | 내용 | 상태 |
+|-------|------|------|
+| Phase 1 | 기반 세팅 (Sidebar, 다크모드, QueryProvider) | ✅ 완료 |
+| Phase 2 | 피드 리디자인 (framer-motion, 상세보기 Drawer) | ✅ 완료 |
+| Phase 3 | 캐러셀 & 콘텐츠 그룹화 | ✅ 완료 |
+| Phase 4 | 구독 카테고리 + Explore 탭 | ✅ 완료 |
+| Phase 5 | RSS Layer 2 연동 (n8n + source_type) | 🔲 예정 |
+| Phase 6 | AI 큐레이션 (Gemini API 브리핑, 추천) | 🔲 미래 |
+
+---
 
 ## Documentation Structure
-- `docs/PLANNING.md`: Feature implementation plans.
-- `docs/CHANGELOG.md`: Project history and changes.
-- `docs/N8N_INTERGRATION.md`: n8n setup and integration guide.
-- `docs/skills/`: Domain-specific technical guidelines for AI agents.
+
+- `docs/PLANNING.md` — 상세 구현 계획 (Phase별 명세)
+- `docs/CHANGELOG.md` — 버전별 변경 이력
+- `docs/ARCHITECTURE.md` — 이 파일 (아키텍처 현행화)
+- `docs/PLAN.md` — 초기 기획안 (Phase 3.1 UI 명세)
+- `docs/PRD.md` — Master PRD
+- `docs/QNA_TROUBLESHOOTING.md` — 이슈 해결 가이드
+- `docs/n8n_setting.md` — n8n 워크플로우 JSON 설정

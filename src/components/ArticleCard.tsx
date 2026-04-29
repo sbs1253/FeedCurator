@@ -26,7 +26,7 @@ export function ArticleCard({ article }: { article: Article }) {
         className="h-full cursor-pointer"
         onClick={() => setSheetOpen(true)}
       >
-        <Card className="flex flex-col h-full overflow-hidden transition-shadow hover:shadow-lg">
+        <Card className="flex flex-col h-full overflow-hidden transition-shadow hover:shadow-lg ">
           <CardHeader className="pb-3">
             <div className="flex items-start justify-between gap-2">
               <div className="flex flex-col gap-1 min-w-0">
