@@ -1,6 +1,6 @@
 # Project Architecture — FeedCurator
 
-> **Last Updated:** 2026-04-30 | **Current Version:** v2.0.0
+> **Last Updated:** 2026-05-01 | **Current Version:** v2.1.0
 
 ---
 
@@ -54,11 +54,11 @@ src/
 │   │   └── sync/route.ts       ← n8n Webhook 프록시 (CORS 우회)
 │   └── actions.ts              ← Server Actions (구독 CRUD, 추천 조회)
 ├── components/
-│   ├── AppSidebar.tsx          ← 2-Column 사이드바 (nav + 동기화 + 다크모드 + 구독관리)
+│   ├── AppSidebar.tsx          ← 2-Column 사이드바 (nav + 카테고리 필터 + 채널 필터 + 동기화 + 다크모드 + 구독관리)
 │   ├── ThemeToggle.tsx         ← 다크/라이트 전환 버튼
 │   ├── AiBriefingBanner.tsx    ← Hero 섹션 (DB 태그 집계 → 오늘의 키워드)
-│   ├── StatsBar.tsx            ← 4칸 통계 바 (Server Component)
-│   ├── FeedCarousel.tsx        ← 가로 스크롤 캐러셀 (shadcn Carousel + embla)
+│   ├── StatsBar.tsx            ← 4칸 통계 바 (Server Component, senderEmail/category prop 수신)
+│   ├── FeedCarousel.tsx        ← 가로 스크롤 캐러셀 (shadcn Carousel + embla, dragFree 제거)
 │   ├── ArticleCard.tsx         ← 인사이트 카드 (framer-motion + Sheet 연동)
 │   ├── ArticleDetailSheet.tsx  ← 상세보기 우측 Drawer
 │   ├── RecommendationCard.tsx  ← 추천 채널 카드 (framer-motion)
@@ -121,9 +121,11 @@ src/
 | 상황 | 패턴 | 적용 컴포넌트 |
 |------|------|--------------|
 | 초기 페이지 렌더링 | Server Component + Supabase service_role | page.tsx, AiBriefingBanner, StatsBar, explore/page.tsx |
-| 구독 추가/삭제 후 목록 갱신 | Server Action + 클라이언트 상태 업데이트 | SubscriptionManager |
-| 동기화 버튼 → n8n 호출 | useMutation (예정) / 현재 fetch + toast | SyncButton |
-| 태그/채널 클라이언트 필터 (Phase 3.2) | useQuery (예정) | TagFilter (미구현) |
+| 구독 추가/삭제 후 목록 갱신 | Server Action + revalidatePath('/') | SubscriptionManager |
+| 동기화 버튼 → n8n 호출 | fetch + toast + revalidatePath | SyncButton |
+| 사이드바 구독 채널 목록 | useQuery (staleTime 30s) + Suspense 경계 | AppSidebar > ChannelList |
+| 채널 필터 | `?email=sender@email.com` → `.ilike('source_name', '%email%')` | page.tsx |
+| 카테고리 필터 | `?category=` → subscriptions OR 쿼리 → articles | page.tsx |
 
 ---
 
@@ -153,25 +155,28 @@ Webhook → 구독 명단 조회 → 검색어 조립 → Gmail 안읽음 수집
 
 ---
 
-## 향후 개발 계획 (Roadmap)
+## 채널 필터 기술 메모
 
-| Phase | 내용 | 상태 |
-|-------|------|------|
-| Phase 1 | 기반 세팅 (Sidebar, 다크모드, QueryProvider) | ✅ 완료 |
-| Phase 2 | 피드 리디자인 (framer-motion, 상세보기 Drawer) | ✅ 완료 |
-| Phase 3 | 캐러셀 & 콘텐츠 그룹화 | ✅ 완료 |
-| Phase 4 | 구독 카테고리 + Explore 탭 | ✅ 완료 |
-| Phase 5 | RSS Layer 2 연동 (n8n + source_type) | 🔲 예정 |
-| Phase 6 | AI 큐레이션 (Gemini API 브리핑, 추천) | 🔲 미래 |
+> `articles.source_name` 필드가 `"팁스터 (tipster@tipster-letter.kr)"` 형식의 복합 문자열로 저장됨.
+> 이름 기반 직접 매칭이 불가능하므로, `subscriptions.sender_email` 값을 URL 파라미터로 전달하여 ILIKE 매칭 수행.
+
+```
+?email=tipster@tipster-letter.kr
+  → .ilike('source_name', '%tipster@tipster-letter.kr%')
+
+?category=마케팅/트렌드
+  → subscriptions에서 email 목록 조회
+  → .or('source_name.ilike.%email1%,source_name.ilike.%email2%,...')
+```
 
 ---
 
 ## Documentation Structure
 
-- `docs/PLANNING.md` — 상세 구현 계획 (Phase별 명세)
+- `docs/ROADMAP.md` — **Master Roadmap** (전체 Phase 진행 관리)
+- `docs/PRD.md` — Master PRD (프로덕트 요구사항 정의서)
+- `docs/ARCHITECTURE.md` — 이 파일 (기술 아키텍처 현행화)
+- `docs/PLANNING.md` — 현재 진행 중인 단기 실행 계획
 - `docs/CHANGELOG.md` — 버전별 변경 이력
-- `docs/ARCHITECTURE.md` — 이 파일 (아키텍처 현행화)
-- `docs/PLAN.md` — 초기 기획안 (Phase 3.1 UI 명세)
-- `docs/PRD.md` — Master PRD
 - `docs/QNA_TROUBLESHOOTING.md` — 이슈 해결 가이드
 - `docs/n8n_setting.md` — n8n 워크플로우 JSON 설정

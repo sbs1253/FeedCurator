@@ -1,5 +1,6 @@
 ---
-trigger: always_on
+trigger: model_decision
+description: 워크플로어 전용 지침
 ---
 
 ### 2️⃣ 현재 프로젝트 전용 룰 (`.agent/rules/001-project-context.mdc`)
